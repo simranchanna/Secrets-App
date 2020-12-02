@@ -1,7 +1,9 @@
 //jshint esversion:6
+//require(dotenv).config();
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
+const md5 = require("md5");
 const ejs  = require("ejs");
 
 const app = express();
@@ -14,10 +16,10 @@ app.use(bodyParser.urlencoded({
 
 mongoose.connect("mongodb://localhost:27017/userDB" , { useNewUrlParser: true , useUnifiedTopology: true});
 
-const userSchema = {
+const userSchema = new mongoose.Schema({
     email: String,
     password: String
-};
+});
 
 const User = new mongoose.model("User",userSchema);
 
@@ -36,7 +38,7 @@ app.get("/register", (req,res)=>{
 app.post("/register", (req,res)=>{
     const newUser = new User({
         email: req.body.username,
-        password: req.body.password
+        password: md5(req.body.password)
     });
 
     newUser.save(err=>{
@@ -51,7 +53,7 @@ app.post("/register", (req,res)=>{
 
 app.post("/login", (req,res)=>{
     const username = req.body.username;
-    const password = req.body.password;
+    const password = md5(req.body.password);
 
     User.findOne({email: username } , (err , foundUser)=>{
         if(err){
