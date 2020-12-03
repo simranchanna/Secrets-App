@@ -29,7 +29,8 @@ mongoose.set('useCreateIndex', true);
 
 const userSchema = new mongoose.Schema({
     email: String,
-    password: String
+    password: String,
+    secret: String
 });
 
 userSchema.plugin(passportLocalMongoose);
@@ -53,7 +54,12 @@ app.get("/register", (req,res)=>{
 });
 
 app.get("/submit", (req,res)=>{
-    res.render("submit");
+    if(req.isAuthenticated()){
+        res.render("submit");
+    }
+    else{
+        res.redirect("/login");
+    }
 });
 
 app.get("/login", (req,res)=>{
@@ -66,13 +72,36 @@ app.get("/logout", (req,res)=>{
 })
 
 app.get("/secrets", (req,res)=>{
-    if(req.isAuthenticated()){
-        res.render("secrets");
-    }
-    else{
-        res.redirect("/login");
-    }
+    User.find({"secret": {$ne: null}} , function(err , foundUsers){
+        if(err){
+            console.log(err);
+        }
+        else{
+            if(foundUsers){
+                res.render("secrets", {usersWithSecrets: foundUsers});
+            }
+        }
+    })
 });
+
+app.post("/submit", (req,res)=>{
+    const newsecret = req.body.secret;
+    console.log(req.user);
+
+    User.findById(req.user.id , function(err,foundUser){
+        if(err){
+            console.log(err);
+        }
+        else{
+            if(foundUser){
+                foundUser.secret = newsecret;
+                foundUser.save(function(){
+                    res.redirect("/secrets");
+                })
+            }
+        }
+    })
+})
 
 app.post("/register", (req,res)=>{
 
